@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Project Provisioning Protocol for Eclipse
+Bundle-SymbolicName: org.eclipse.ppp4e;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Automatic-Module-Name: org.eclipse.ppp4e
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: org.eclipse.ui.workbench,
+ org.eclipse.core.runtime;bundle-version="3.14.0",
+ org.eclipse.ui;bundle-version="3.109.100",
+ org.eclipse.core.resources,
+ com.google.gson;bundle-version="2.7.0",
+ org.eclipse.ppp4j;bundle-version="1.0.0"
+Bundle-ActivationPolicy: lazy
+Bundle-Activator: org.eclipse.ppp4e.ProvisioningPlugin
+Export-Package: org.eclipse.ppp4e.core,
+ org.eclipse.ppp4e.ui.wizard
