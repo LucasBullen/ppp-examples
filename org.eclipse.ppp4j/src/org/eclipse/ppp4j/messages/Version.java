@@ -1,9 +1,9 @@
 package org.eclipse.ppp4j.messages;
 
 public class Version {
-	String id;
-	String title;
-	String caption;
+	public String id;
+	public String title;
+	public String caption;
 
 	public Version() {
 	}

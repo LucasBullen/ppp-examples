@@ -1,10 +1,10 @@
 package org.eclipse.ppp4j.messages;
 
 public class ComponentVersion {
-	String id;
-	String title;
-	String caption;
-	Version[] versions;
+	public String id;
+	public String title;
+	public String caption;
+	public Version[] versions;
 
 	public ComponentVersion() {
 	}
