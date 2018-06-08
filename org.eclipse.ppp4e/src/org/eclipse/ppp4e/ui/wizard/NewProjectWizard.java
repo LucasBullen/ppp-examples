@@ -1,27 +1,35 @@
 package org.eclipse.ppp4e.ui.wizard;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.Adapters;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.ppp4e.ProvisioningPlugin;
 import org.eclipse.ppp4e.core.Server;
 import org.eclipse.ppp4e.core.StreamConnectionProvider;
-import org.eclipse.ppp4j.messages.ComponentVersionSelection;
+import org.eclipse.ppp4j.messages.ErroneousParameter;
+import org.eclipse.ppp4j.messages.ProvisionResult;
 import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkingSet;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 
 public abstract class NewProjectWizard extends Wizard implements INewWizard {
 	private NewProjectWizardPage inputPage;
@@ -31,6 +39,8 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 	protected abstract StreamConnectionProvider getStreamConnectionProvider();
 
 	protected abstract String getWizardName();
+
+	protected abstract File newFolderLocation();
 
 	public NewProjectWizard() {
 		inputPage = new NewProjectWizardPage(getWizardName());
@@ -52,67 +62,78 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 	@Override
 	public void init(IWorkbench workbench, IStructuredSelection selection) {
 		Iterator<?> selectionIterator = selection.iterator();
-		Set<IWorkingSet> workingSets = new HashSet<>();
-		IResource selectedResource = null;
-
+		IResource asResource = null;
 		while (selectionIterator.hasNext()) {
 			Object element = selectionIterator.next();
-			IResource asResource = toResource(element);
-
-			if (asResource != null && selectedResource == null) {
-				selectedResource = asResource;
-			} else {
-				IWorkingSet asWorkingSet = Adapters.adapt(element, IWorkingSet.class);
-				if (asWorkingSet != null) {
-					workingSets.add(asWorkingSet);
-				}
+			asResource = toResource(element);
+			if (asResource != null) {
+				inputPage.setDirectory(toFile(asResource));
 			}
+			break;
 		}
-
-		if (workingSets.isEmpty() && selectedResource != null) {
-			workingSets.addAll(getWorkingSets(selectedResource));
-		}
-		inputPage.setWorkingSets(workingSets);
-
-		if (selectedResource != null) {
-			inputPage.setDirectory(toFile(selectedResource));
-		} else {
+		if (asResource == null) {
 			inputPage.setDirectory(newFolderLocation());
 		}
 	}
 
 	@Override
 	public boolean performFinish() {
-		String name = "name";
-		String location = "location";
-		String version = "version";
-		CompletableFuture.runAsync(() -> {
-			ProvisioningParameters parameters = new ProvisioningParameters(name, location, version, null,
-					new ComponentVersionSelection[0]);
-			server.Provision(parameters)
-			.thenAccept(provisionResult -> {
-				System.out.println("First New File:" + provisionResult.newFiles[0]);
-			});
-		});
-		return false;
-	}
-
-	protected File newFolderLocation() {
-		return null;
-	}
-
-	private Set<IWorkingSet> getWorkingSets(IResource resource) {
-		IWorkingSet[] allWorkingSets = PlatformUI.getWorkbench().getWorkingSetManager().getAllWorkingSets();
-		Set<IWorkingSet> fileWorkingSets = new HashSet<>();
-
-		for (IWorkingSet iWorkingSet : allWorkingSets) {
-			IAdaptable[] elements = iWorkingSet.getElements();
-			if (Arrays.asList(elements).contains(resource.getProject())) {
-				fileWorkingSets.add(iWorkingSet);
+		try {
+			ProvisioningParameters parameters = inputPage.getParameters();
+			ProvisionResult result = server.Provision(parameters).get();// TODO: set up as a job to work in background
+			if (result.erroneousParameters.length > 0
+					|| (result.errorMessage != null && !result.errorMessage.isEmpty())) {
+				showError(result.errorMessage, result.erroneousParameters);
+				return false;
 			}
+			createProject(parameters.name, result.location, result.openFiles);
+			return true;
+		} catch (InterruptedException | ExecutionException e) {
+			ProvisioningPlugin.logError(e);
+			return false;
+		}
+	}
+
+	private void showError(String errorMessage, ErroneousParameter[] erroneousParameters) {
+		if (getContainer().getCurrentPage() != inputPage) {
+			getContainer().showPage(inputPage);
+		}
+		if (errorMessage != null && !errorMessage.isEmpty()) {
+			inputPage.setErrorMessage(errorMessage);
+		}
+		for (ErroneousParameter erroneousParameter : erroneousParameters) {
+			inputPage.showError(erroneousParameter);
+		}
+	}
+
+	private void createProject(String name, String directory, String[] openFiles) { // TODO: link into a job/monitor
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IProject project = root.getProject(name);
+		IProjectDescription description = root.getWorkspace().newProjectDescription(project.getName());
+		description.setLocation(Path.fromOSString(directory));
+		try {
+			project.create(description, new NullProgressMonitor());
+			project.open(new NullProgressMonitor());
+			project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
+		} catch (CoreException e) {
+			MessageDialog.openError(getShell(), "Unable to create project", e.toString());
 		}
 
-		return fileWorkingSets;
+		Display.getDefault().asyncExec(() -> {
+			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+			if (page != null) {
+				try {
+					for (String filePath : openFiles) {
+						IFile rsPrgramFile = project.getFile(filePath);
+						if (rsPrgramFile.exists()) {
+							IDE.openEditor(page, rsPrgramFile);
+						}
+					}
+				} catch (CoreException e) {
+					MessageDialog.openError(getShell(), "Unable to open project", e.toString());
+				}
+			}
+		});
 	}
 
 	@Override

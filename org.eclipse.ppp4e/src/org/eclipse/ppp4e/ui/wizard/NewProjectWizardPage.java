@@ -3,10 +3,11 @@ package org.eclipse.ppp4e.ui.wizard;
 import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
 
 import java.io.File;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 
+import org.eclipse.jface.fieldassist.ControlDecoration;
+import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.ListViewer;
@@ -14,9 +15,16 @@ import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.ppp4e.ProvisioningPlugin;
 import org.eclipse.ppp4j.messages.ComponentVersion;
+import org.eclipse.ppp4j.messages.ComponentVersionSelection;
+import org.eclipse.ppp4j.messages.ErroneousParameter;
 import org.eclipse.ppp4j.messages.InitializeResult;
+import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.ppp4j.messages.Template;
+import org.eclipse.ppp4j.messages.TemplateSelection;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -29,23 +37,39 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.IWorkingSet;
 
 public class NewProjectWizardPage extends WizardPage {
-	private Set<IWorkingSet> workingSets;
 	private File directory;
 	private InitializeResult initializeResult;
-	Semaphore initSemaphore = new Semaphore(0);
-	boolean initialized = false;
+	private Semaphore initSemaphore = new Semaphore(0);
+	private boolean initialized = false;
 
-	Label loadingLabel;
+	private Label loadingLabel;
 
-	Text nameInput;
-	Text locationInput;
-	Text versionInput;
+	private Text nameInput;
+	private Text locationInput;
+	private Text versionInput;
+
+	private ControlDecoration nameDecoration;
+	private ControlDecoration locationDecoration;
+	private ControlDecoration versionDecoration;
+	private ControlDecoration templateDecoration;
+	// TODO: private ControlDecoration componentVersionDecoration;
+	// TODO: private ControlDecoration templateComponentVersionDecoration;
+
+	private ProvisioningParameters parameters;
 
 	protected NewProjectWizardPage(String pageName) {
 		super(pageName);
+	}
+
+	public ProvisioningParameters getParameters() {
+		parameters.name = nameInput.getText();
+		parameters.location = locationInput.getText();
+		if (versionInput != null) {
+			parameters.version = versionInput.getText();
+		}
+		return parameters;
 	}
 
 	public void updatedButtons() {
@@ -95,6 +119,9 @@ public class NewProjectWizardPage extends WizardPage {
 	}
 
 	private void createParameterControl(Composite parent) {
+		Image errorImage = FieldDecorationRegistry.getDefault().getFieldDecoration(FieldDecorationRegistry.DEC_ERROR)
+				.getImage();
+
 		Composite container = (Composite) getControl();
 		if (container == null) {
 			container = new Composite(parent, SWT.NULL);
@@ -111,14 +138,23 @@ public class NewProjectWizardPage extends WizardPage {
 		nameInput = new Text(container, SWT.BORDER);
 		nameInput.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		nameInput.setText(initializeResult.defaultProvisioningParameters.name);
+		nameDecoration = new ControlDecoration(nameInput, SWT.TOP | SWT.LEFT);
+		nameDecoration.setImage(errorImage);
 		new Label(container, SWT.NONE);
 
-		Label lcoationLabel = new Label(container, SWT.NONE);
-		lcoationLabel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lcoationLabel.setText("Location:");
+		Label locationLabel = new Label(container, SWT.NONE);
+		locationLabel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		locationLabel.setText("Location:");
 		locationInput = new Text(container, SWT.BORDER);
 		locationInput.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		locationInput.setText(initializeResult.defaultProvisioningParameters.location);
+		locationDecoration = new ControlDecoration(nameInput, SWT.TOP | SWT.LEFT);
+		locationDecoration.setImage(errorImage);
+		String location = initializeResult.defaultProvisioningParameters.location;
+		if (location == null || location.isEmpty()) {
+			locationInput.setText(directory.getAbsolutePath());
+		} else {
+			locationInput.setText(location);
+		}
 		Button browseButton = new Button(container, SWT.NONE);
 		browseButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		browseButton.setText("Browse");
@@ -137,6 +173,8 @@ public class NewProjectWizardPage extends WizardPage {
 			versionInput = new Text(container, SWT.BORDER);
 			versionInput.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 			versionInput.setText(initializeResult.defaultProvisioningParameters.version);
+			versionDecoration = new ControlDecoration(versionInput, SWT.TOP | SWT.LEFT);
+			versionDecoration.setImage(errorImage);
 			new Label(container, SWT.NONE);
 		}
 
@@ -145,14 +183,18 @@ public class NewProjectWizardPage extends WizardPage {
 		new Label(container, SWT.NONE);
 
 		new Label(container, SWT.NONE);
-		createComponentVersionsControl(container, initializeResult.componentVersions);
+		createComponentVersionsControl(container, initializeResult.componentVersions,
+				parameters.componentVersionSelections);
 		container.getParent().layout(true, true);
 		container.redraw();
 		container.update();
 		getShell().pack(true);
+		showError(null);
 	}
 
 	private void createTemplatesControl(Composite container, Template[] templates) {
+		Image errorImage = FieldDecorationRegistry.getDefault().getFieldDecoration(FieldDecorationRegistry.DEC_ERROR)
+				.getImage();
 		Group templateContainer = new Group(container, SWT.BORDER);
 		templateContainer.setLayout(new GridLayout(1, false));
 		templateContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
@@ -171,6 +213,8 @@ public class NewProjectWizardPage extends WizardPage {
 				return template.title;
 			}
 		});
+		templateDecoration = new ControlDecoration(templateViewer.getControl(), SWT.TOP | SWT.LEFT);
+		templateDecoration.setImage(errorImage);
 		Composite componentContainer = new Composite(templateContainer, SWT.NULL);
 		componentContainer.setLayout(new GridLayout(1, false));
 		templateViewer.addSelectionChangedListener(e -> {
@@ -179,18 +223,34 @@ public class NewProjectWizardPage extends WizardPage {
 			}
 			Object selection = e.getStructuredSelection().getFirstElement();
 			if (selection != null && selection instanceof Template) {
-				createComponentVersionsControl(componentContainer, ((Template) selection).componentVersions);
+				setTemplate(((Template) selection));
+				createComponentVersionsControl(componentContainer, ((Template) selection).componentVersions,
+						parameters.templateSelection.componentVersions);
+				componentContainer.getParent().layout(true, true);
+				componentContainer.getParent().getParent().getParent().getParent().layout(true, true);
+				componentContainer.getParent().getParent().getParent().getParent().redraw();
+				componentContainer.getParent().getParent().getParent().getParent().update();
+				getShell().pack(true);
 			}
-			componentContainer.getParent().layout(true, true);
-			componentContainer.getParent().getParent().getParent().getParent().layout(true, true);
-			componentContainer.getParent().getParent().getParent().getParent().redraw();
-			componentContainer.getParent().getParent().getParent().getParent().update();
-			getShell().pack(true);
 		});
 		templateViewer.setInput(templates);
 	}
 
-	private void createComponentVersionsControl(Composite container, ComponentVersion[] componentVersions) {
+	private void setTemplate(Template template) {
+		parameters.templateSelection.id = template.id;
+		parameters.templateSelection.componentVersions = new ComponentVersionSelection[template.componentVersions.length];
+		for (int i = 0; i < template.componentVersions.length; i++) {
+			ComponentVersion componentVersion = template.componentVersions[i];
+			if (componentVersion.versions.length == 0) {
+				continue;
+			}
+			parameters.templateSelection.componentVersions[i] = new ComponentVersionSelection(componentVersion.id,
+					componentVersion.versions[0].id);
+		}
+	}
+
+	private void createComponentVersionsControl(Composite container, ComponentVersion[] componentVersions,
+			ComponentVersionSelection[] selections) {
 		Composite componentContainer = new Composite(container, SWT.NONE);
 		componentContainer.setLayout(new GridLayout(2, false));
 		componentContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
@@ -198,31 +258,82 @@ public class NewProjectWizardPage extends WizardPage {
 		for (ComponentVersion componentVersion : componentVersions) {
 			Label label = new Label(componentContainer, SWT.NONE);
 			label.setText(componentVersion.title);
+			label.setToolTipText(componentVersion.caption);
 			label.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+
 			Combo combo = new Combo(componentContainer, SWT.READ_ONLY);
+			combo.setToolTipText(componentVersion.caption);
 			String[] verisonLabels = new String[componentVersion.versions.length];
 			for (int i = 0; i < componentVersion.versions.length; i++) {
 				verisonLabels[i] = componentVersion.versions[i].title;
 			}
 			combo.setItems(verisonLabels);
-			componentContainer.getParent().layout(true, true);
-			componentContainer.redraw();
-			componentContainer.update();
+			combo.select(0);
+			combo.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					for (ComponentVersionSelection selection : selections) {
+						if (selection.id.equals(componentVersion.id)) {
+							selection.versionId = combo.getText();
+						}
+					}
+				}
+			});
 		}
+		componentContainer.getParent().layout(true, true);
+		componentContainer.redraw();
+		componentContainer.update();
 	}
 
 	public void setDirectory(File directory) {
 		this.directory = directory;
 	}
 
-	public void setWorkingSets(Set<IWorkingSet> workingSets) {
-		this.workingSets = workingSets;
-	}
-
 	public void init(InitializeResult initializeResult) {
 		this.initializeResult = initializeResult;
+		parameters = new ProvisioningParameters();
+		parameters.templateSelection = new TemplateSelection();
+		parameters.componentVersionSelections = new ComponentVersionSelection[initializeResult.componentVersions.length];
+		for (int i = 0; i < initializeResult.componentVersions.length; i++) {
+			ComponentVersion componentVersion = initializeResult.componentVersions[i];
+			if (componentVersion.versions.length == 0) {
+				continue;
+			}
+			parameters.componentVersionSelections[i] = new ComponentVersionSelection(componentVersion.id,
+					componentVersion.versions[0].id);
+		}
 		initialized = true;
 		initSemaphore.release();
+	}
+
+	public void showError(ErroneousParameter erroneousParameter) {
+		nameDecoration.hide();
+		locationDecoration.hide();
+		versionDecoration.hide();
+		templateDecoration.hide();
+		if (erroneousParameter == null) {
+			return;
+		}
+		switch (erroneousParameter.parameterType) {
+		case Name:
+			nameDecoration.showHoverText(erroneousParameter.message);
+			nameDecoration.show();
+			break;
+		case Location:
+			locationDecoration.showHoverText(erroneousParameter.message);
+			locationDecoration.show();
+			break;
+		case Version:
+			versionDecoration.showHoverText(erroneousParameter.message);
+			versionDecoration.show();
+			break;
+		case Template:
+			templateDecoration.showHoverText(erroneousParameter.message);
+			templateDecoration.show();
+			break;
+		default:
+			break;
+		}
 	}
 
 }

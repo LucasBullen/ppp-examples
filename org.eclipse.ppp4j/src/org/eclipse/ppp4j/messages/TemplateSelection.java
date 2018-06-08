@@ -1,13 +1,13 @@
 package org.eclipse.ppp4j.messages;
 
 public class TemplateSelection {
-	String id;
-	ComponentVersion[] componentVersions;
+	public String id;
+	public ComponentVersionSelection[] componentVersions;
 
 	public TemplateSelection() {
 	}
 
-	public TemplateSelection(String id, ComponentVersion[] componentVersions) {
+	public TemplateSelection(String id, ComponentVersionSelection[] componentVersions) {
 		this.id = id;
 		this.componentVersions = componentVersions;
 	}

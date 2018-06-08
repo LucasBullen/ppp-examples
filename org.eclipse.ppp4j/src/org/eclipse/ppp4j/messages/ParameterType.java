@@ -1,7 +1,7 @@
 package org.eclipse.ppp4j.messages;
 
 public enum ParameterType {
-	Name(1), Location(2), Version(3), Template(4), TemplateComponentVersion(5), ComponentVersion(6);
+	Name(1), Location(2), Version(3), ComponentVersion(4), Template(5), TemplateComponentVersion(6);
 
 	private final int value;
 

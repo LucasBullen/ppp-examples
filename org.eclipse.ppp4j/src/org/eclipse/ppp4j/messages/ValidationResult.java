@@ -1,16 +1,14 @@
 package org.eclipse.ppp4j.messages;
 
-public class PreviewResult {
+public class ValidationResult {
 	public String errorMessage;
 	public ErroneousParameter[] erroneousParameters;
-	public String message;
 
-	public PreviewResult() {
+	public ValidationResult() {
 	}
 
-	public PreviewResult(String errorMessage, ErroneousParameter[] erroneousParameters, String message) {
+	public ValidationResult(String errorMessage, ErroneousParameter[] erroneousParameters) {
 		this.errorMessage = errorMessage;
 		this.erroneousParameters = erroneousParameters;
-		this.message = message;
 	}
 }

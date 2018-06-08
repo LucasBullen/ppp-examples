@@ -1,8 +1,8 @@
 package org.eclipse.ppp4j.messages;
 
 public class ComponentVersionSelection {
-	String id;
-	String versionId;
+	public String id;
+	public String versionId;
 
 	public ComponentVersionSelection() {
 	}

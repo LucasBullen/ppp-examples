@@ -5,4 +5,6 @@ Bundle-SymbolicName: org.eclipse.ppp4j
 Bundle-Version: 1.0.0.qualifier
 Automatic-Module-Name: org.eclipse.ppp4j
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Export-Package: org.eclipse.ppp4j.messages
+Export-Package: org.eclipse.ppp4j.messages,
+ org.eclipse.ppp4j.server
+Require-Bundle: com.google.gson
