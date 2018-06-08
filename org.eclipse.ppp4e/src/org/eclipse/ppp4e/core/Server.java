@@ -10,19 +10,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 
 import org.eclipse.ppp4e.ProvisioningPlugin;
-import org.eclipse.ppp4j.messages.ComponentVersion;
-import org.eclipse.ppp4j.messages.ComponentVersionSelection;
-import org.eclipse.ppp4j.messages.ErroneousParameter;
+import org.eclipse.ppp4j.messages.Initialize;
 import org.eclipse.ppp4j.messages.InitializeResult;
 import org.eclipse.ppp4j.messages.ProvisionResult;
 import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.ppp4j.messages.RpcRequest;
 import org.eclipse.ppp4j.messages.RpcResponse;
-import org.eclipse.ppp4j.messages.Template;
-import org.eclipse.ppp4j.messages.TemplateSelection;
-import org.eclipse.ppp4j.messages.Version;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 public class Server {
 	private String baseMethod = "projectProvisioning/";
@@ -30,92 +26,101 @@ public class Server {
 	Map<Integer, Semaphore> messageResponseSemaphores = new HashMap<>();
 	Map<Integer, Object> messageResponses = new HashMap<>();
 	private Integer nextMessageId = 0;
+	private Gson gson = new Gson();
+	private PrintWriter writer;
+	private BufferedReader reader;
 
 	public Server(StreamConnectionProvider streamConnectionProvider) {
 		this.streamConnectionProvider = streamConnectionProvider;
 		try {
 			streamConnectionProvider.start();
+			writer = new PrintWriter(streamConnectionProvider.getOutputStream());
 			listenForMessages();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			ProvisioningPlugin.logError(e);
 		}
+	}
+
+	public void closeConnection() {
+		if (writer != null) {
+			writer.close();
+		}
+		if (reader != null) {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				ProvisioningPlugin.logError(e);
+			}
+		}
+		streamConnectionProvider.stop();
 	}
 
 	public CompletableFuture<InitializeResult> Initalize() {
-		// return sendMessage("initalize", new Initialize(true, true));
-		ComponentVersion[] cargoTemplateComponentVersions = new ComponentVersion[] {
-				new ComponentVersion("cargo_verison",
-						"Cargo Version", null,
-						new Version[] { new Version("0.0.1", "0.0.1", null), new Version("0.2.0", "0.2.0", null) }) };
-		ComponentVersion[] componentVersions = new ComponentVersion[] {
-				new ComponentVersion("rust_version", "Rust Version", null,
-						new Version[] { new Version("1.0.0", "1.0.0", null), new Version("2.0.0", "2.0.0", null) }) };
-		Template[] templates = new Template[] { new Template("hello_world", "Hello World",
-				"basic project outputting 'hello world' to the console", new ComponentVersion[0]),
-				new Template("crate_example", "Cargo Crate Example",
-						"Basic cargo based Rust project that imports an external crate",
-						cargoTemplateComponentVersions) };
-
-		TemplateSelection selection = new TemplateSelection("hello_world", new ComponentVersion[0]);
-
-		return CompletableFuture.completedFuture(
-				new InitializeResult(true, false, false, templates, componentVersions, new ProvisioningParameters(
-						"new_rust_project",
-						"/tmp/new_rust_project", "0.0.1-beta", selection, new ComponentVersionSelection[0])));
+		return sendMessage("initalize", new Initialize(true, true)).thenApply(object -> {
+			return gson.fromJson(gson.toJson(object), InitializeResult.class);
+		});
 	}
 
 	public CompletableFuture<ProvisionResult> Provision(ProvisioningParameters parameters) {
-		// return sendMessage("provision", parameters);
-		return CompletableFuture.completedFuture(
-				new ProvisionResult(null, new ErroneousParameter[0], new String[] { "test" }, new String[] { "test" }));
+		return sendMessage("provision", parameters).thenApply(object -> {
+			return gson.fromJson(gson.toJson(object), ProvisionResult.class);
+		});
 	}
 
-	private <T> CompletableFuture<T> sendMessage(String method, Object params) {
-		try {
-			streamConnectionProvider.start();
+	private CompletableFuture<Object> sendMessage(String method, Object params) {
+		CompletableFuture<Object> completableFuture = CompletableFuture.supplyAsync(() -> {
 			final int id = nextMessageId;
 			nextMessageId++;
 			RpcRequest request = new RpcRequest(String.valueOf(id), baseMethod + method, params);
-			try (PrintWriter p = new PrintWriter(streamConnectionProvider.getOutputStream())) {
-				Gson gson = new Gson();
-				p.println(gson.toJson(request));
+			writer.println(gson.toJson(request));
+			writer.flush();
+
+			Semaphore responseSemaphore = new Semaphore(0);
+			messageResponseSemaphores.put(id, responseSemaphore);
+			try {
+				responseSemaphore.acquire();
+				Object result = messageResponses.get(id);
+				messageResponses.remove(id);
+				return result;
+			} catch (InterruptedException e) {
+				ProvisioningPlugin.logError(e);
+				return null;
 			}
-			Semaphore responSemaphore = new Semaphore(0);
-			messageResponseSemaphores.put(id, responSemaphore);
-			@SuppressWarnings("unchecked")
-			CompletableFuture<T> completableFuture = CompletableFuture.supplyAsync(() -> {
-				try {
-					responSemaphore.acquire();
-					return (T) messageResponses.get(id);
-				} catch (InterruptedException e) {
-					ProvisioningPlugin.logError(e);
-					return null;
-				}
-			});
-			return completableFuture;
-		} catch (IOException e) {
-			ProvisioningPlugin.logError(e);
-			return CompletableFuture.completedFuture(null);
-		}
+		});
+		return completableFuture;
 	}
 
 	private void listenForMessages() {
 		CompletableFuture.runAsync(() -> {
-			try (BufferedReader in = new BufferedReader(
-					new InputStreamReader(streamConnectionProvider.getInputStream()))) {
-				String line = in.readLine();
-				while (line != null) {
-					Gson gson = new Gson();
-					RpcResponse response = gson.fromJson(line, RpcResponse.class);
-					Integer id = Integer.getInteger(response.id);
+			try {
+				reader = new BufferedReader(new InputStreamReader(streamConnectionProvider.getInputStream()));
+				while (true) {
+					String input = reader.readLine();
+					if (input == null) {
+						break;
+					}
+					RpcResponse response;
+					try {
+						response = gson.fromJson(input, RpcResponse.class);
+					} catch (JsonSyntaxException e) {
+						System.out.println("Unknown message format: " + input);
+						continue;
+					}
+					Integer id = Integer.parseInt(response.id);
 					messageResponses.put(id, response.result);
 					messageResponseSemaphores.get(id).release();
-					line = in.readLine();
 				}
-			} catch (IOException e) {
-				ProvisioningPlugin.logError(e);
+			} catch (Exception e) {
+				System.out.println(e);
+			} finally {
+				if (reader != null) {
+					try {
+						reader.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
 			}
-			System.out.println("no longer listening");
 		});
 	}
 }

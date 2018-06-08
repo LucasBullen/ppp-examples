@@ -53,6 +53,7 @@ public class ProvisioningPlugin extends AbstractUIPlugin {
 	 * @param thr The exception through which we noticed the error
 	 */
 	public static void logError(final Throwable thr) {
+		thr.printStackTrace();
 		getDefault().getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, 0, thr.getMessage(), thr));
 	}
 

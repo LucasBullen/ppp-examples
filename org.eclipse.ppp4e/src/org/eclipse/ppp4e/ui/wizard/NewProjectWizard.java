@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Semaphore;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Adapters;
@@ -14,11 +13,11 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
-import org.eclipse.ppp4e.ProvisioningPlugin;
 import org.eclipse.ppp4e.core.Server;
 import org.eclipse.ppp4e.core.StreamConnectionProvider;
 import org.eclipse.ppp4j.messages.ComponentVersionSelection;
 import org.eclipse.ppp4j.messages.ProvisioningParameters;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkingSet;
@@ -27,33 +26,31 @@ import org.eclipse.ui.PlatformUI;
 public abstract class NewProjectWizard extends Wizard implements INewWizard {
 	private NewProjectWizardPage inputPage;
 	private NewProjectPreviewWizardPage previewPage;
-	Semaphore initSemaphore = new Semaphore(0);
 	private Server server;
-
-	public NewProjectWizard() {
-		server = new Server(getStreamConnectionProvider());
-	}
 
 	protected abstract StreamConnectionProvider getStreamConnectionProvider();
 
+	protected abstract String getWizardName();
+
+	public NewProjectWizard() {
+		inputPage = new NewProjectWizardPage(getWizardName());
+		addPage(inputPage);
+		previewPage = null;
+		server = new Server(getStreamConnectionProvider());
+		server.Initalize().thenAccept(initializeResult -> {
+			inputPage.init(initializeResult);
+			if (initializeResult.previewSupported) {
+				previewPage = new NewProjectPreviewWizardPage();
+				Display.getDefault().asyncExec(() -> {
+					addPage(previewPage);
+					inputPage.updatedButtons();
+				});
+			}
+		});
+	}
+
 	@Override
 	public void init(IWorkbench workbench, IStructuredSelection selection) {
-		inputPage = new NewProjectWizardPage("name");
-		CompletableFuture.runAsync(() -> {
-			server.Initalize()
-			.thenAccept(initializeResult -> {
-				inputPage.init(initializeResult);
-				try {
-					initSemaphore.acquire();
-					if (initializeResult.validationSupported) {
-						previewPage = new NewProjectPreviewWizardPage();
-						addPage(previewPage);
-					}
-				} catch (InterruptedException e) {
-					ProvisioningPlugin.logError(e);
-				}
-			});
-		});
 		Iterator<?> selectionIterator = selection.iterator();
 		Set<IWorkingSet> workingSets = new HashSet<>();
 		IResource selectedResource = null;
@@ -82,12 +79,6 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 		} else {
 			inputPage.setDirectory(newFolderLocation());
 		}
-	}
-
-	@Override
-	public void addPages() {
-		addPage(inputPage);
-		initSemaphore.release();
 	}
 
 	@Override
@@ -122,6 +113,14 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 		}
 
 		return fileWorkingSets;
+	}
+
+	@Override
+	public void dispose() {
+		if (server != null) {
+			server.closeConnection();
+		}
+		super.dispose();
 	}
 
 	private IResource toResource(Object o) {

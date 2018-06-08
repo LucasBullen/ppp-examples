@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Rustprovisioningserver
+Bundle-SymbolicName: org.eclipse.rustprovisioningserver
+Bundle-Version: 1.0.0.qualifier
+Export-Package: org.eclipse.rustprovisioningserver
+Require-Bundle: org.eclipse.ppp4j;bundle-version="1.0.0",
+ com.google.gson

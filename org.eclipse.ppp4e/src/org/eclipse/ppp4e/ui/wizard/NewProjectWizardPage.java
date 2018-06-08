@@ -48,6 +48,12 @@ public class NewProjectWizardPage extends WizardPage {
 		super(pageName);
 	}
 
+	public void updatedButtons() {
+		Display.getDefault().asyncExec(() -> {
+			getContainer().updateButtons();
+		});
+	}
+
 	@Override
 	public void createControl(Composite parent) {
 		CompletableFuture.runAsync(() -> {
@@ -93,6 +99,9 @@ public class NewProjectWizardPage extends WizardPage {
 		if (container == null) {
 			container = new Composite(parent, SWT.NULL);
 			setControl(container);
+		}
+		if (container.isDisposed()) {
+			return;
 		}
 		container.setLayout(new GridLayout(3, false));
 

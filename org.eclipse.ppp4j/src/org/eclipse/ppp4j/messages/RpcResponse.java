@@ -5,7 +5,7 @@ public class RpcResponse {
 	public String id;
 	public Object result;
 
-	public RpcResponse(String id, String result) {
+	public RpcResponse(String id, Object result) {
 		this.id = id;
 		this.result = result;
 	}
