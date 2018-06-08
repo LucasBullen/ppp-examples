@@ -7,3 +7,6 @@
  - rustProvisioningServer: Java project for provisioning the project using ppp4j
 
 The structure, design, and locations of code are all subject to change quite often currently as these projects are in their beginning stages.
+
+## <a name="license"></a>License
+[Eclipse Public License 2.0](https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html)
