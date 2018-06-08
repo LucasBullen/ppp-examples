@@ -33,7 +33,6 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.ppp4e.ProvisioningPlugin;
 import org.eclipse.ppp4e.core.Server;
 import org.eclipse.ppp4e.core.StreamConnectionProvider;
-import org.eclipse.ppp4j.messages.ErroneousParameter;
 import org.eclipse.ppp4j.messages.ProvisionResult;
 import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.swt.widgets.Display;
@@ -60,7 +59,7 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 		previewPage = null;
 		server = new Server(getStreamConnectionProvider());
 		server.Initalize().thenAccept(initializeResult -> {
-			inputPage.init(initializeResult);
+			inputPage.init(initializeResult, server);
 			if (initializeResult.previewSupported) {
 				previewPage = new NewProjectPreviewWizardPage();
 				Display.getDefault().asyncExec(() -> {
@@ -95,7 +94,10 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 			ProvisionResult result = server.Provision(parameters).get();// TODO: set up as a job to work in background
 			if (result.erroneousParameters.length > 0
 					|| (result.errorMessage != null && !result.errorMessage.isEmpty())) {
-				showError(result.errorMessage, result.erroneousParameters);
+				if (getContainer().getCurrentPage() != inputPage) {
+					getContainer().showPage(inputPage);
+				}
+				inputPage.showError(result.errorMessage, result.erroneousParameters);
 				return false;
 			}
 			createProject(parameters.name, result.location, result.openFiles);
@@ -103,18 +105,6 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 		} catch (InterruptedException | ExecutionException e) {
 			ProvisioningPlugin.logError(e);
 			return false;
-		}
-	}
-
-	private void showError(String errorMessage, ErroneousParameter[] erroneousParameters) {
-		if (getContainer().getCurrentPage() != inputPage) {
-			getContainer().showPage(inputPage);
-		}
-		if (errorMessage != null && !errorMessage.isEmpty()) {
-			inputPage.setErrorMessage(errorMessage);
-		}
-		for (ErroneousParameter erroneousParameter : erroneousParameters) {
-			inputPage.showError(erroneousParameter);
 		}
 	}
 

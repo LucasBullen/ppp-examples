@@ -23,9 +23,11 @@ import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.ListViewer;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.ppp4e.ProvisioningPlugin;
+import org.eclipse.ppp4e.core.Server;
 import org.eclipse.ppp4j.messages.ComponentVersion;
 import org.eclipse.ppp4j.messages.ComponentVersionSelection;
 import org.eclipse.ppp4j.messages.ErroneousParameter;
@@ -34,8 +36,6 @@ import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.ppp4j.messages.Template;
 import org.eclipse.ppp4j.messages.TemplateSelection;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -53,6 +53,7 @@ import org.eclipse.swt.widgets.Text;
 public class NewProjectWizardPage extends WizardPage {
 	private File directory;
 	private InitializeResult initializeResult;
+	private Server server;
 	private Semaphore initSemaphore = new Semaphore(0);
 	private boolean initialized = false;
 
@@ -150,6 +151,9 @@ public class NewProjectWizardPage extends WizardPage {
 		nameInput = new Text(container, SWT.BORDER);
 		nameInput.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		nameInput.setText(initializeResult.defaultProvisioningParameters.name);
+		nameInput.addModifyListener(e -> {
+			validate();
+		});
 		nameDecoration = new ControlDecoration(nameInput, SWT.TOP | SWT.LEFT);
 		nameDecoration.setImage(errorImage);
 		new Label(container, SWT.NONE);
@@ -159,7 +163,10 @@ public class NewProjectWizardPage extends WizardPage {
 		locationLabel.setText("Location:");
 		locationInput = new Text(container, SWT.BORDER);
 		locationInput.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		locationDecoration = new ControlDecoration(nameInput, SWT.TOP | SWT.LEFT);
+		locationInput.addModifyListener(e -> {
+			validate();
+		});
+		locationDecoration = new ControlDecoration(locationInput, SWT.TOP | SWT.LEFT);
 		locationDecoration.setImage(errorImage);
 		String location = initializeResult.defaultProvisioningParameters.location;
 		if (location == null || location.isEmpty()) {
@@ -185,6 +192,9 @@ public class NewProjectWizardPage extends WizardPage {
 			versionInput = new Text(container, SWT.BORDER);
 			versionInput.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 			versionInput.setText(initializeResult.defaultProvisioningParameters.version);
+			versionInput.addModifyListener(e -> {
+				validate();
+			});
 			versionDecoration = new ControlDecoration(versionInput, SWT.TOP | SWT.LEFT);
 			versionDecoration.setImage(errorImage);
 			new Label(container, SWT.NONE);
@@ -201,7 +211,7 @@ public class NewProjectWizardPage extends WizardPage {
 		container.redraw();
 		container.update();
 		getShell().pack(true);
-		showError(null);
+		showError(null, null);
 	}
 
 	private void createTemplatesControl(Composite container, Template[] templates) {
@@ -244,8 +254,10 @@ public class NewProjectWizardPage extends WizardPage {
 				componentContainer.getParent().getParent().getParent().getParent().update();
 				getShell().pack(true);
 			}
+			validate();
 		});
 		templateViewer.setInput(templates);
+		templateViewer.setSelection(new StructuredSelection(templateViewer.getElementAt(0)), true);
 	}
 
 	private void setTemplate(Template template) {
@@ -281,16 +293,14 @@ public class NewProjectWizardPage extends WizardPage {
 			}
 			combo.setItems(verisonLabels);
 			combo.select(0);
-			combo.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					for (ComponentVersionSelection selection : selections) {
-						if (selection.id.equals(componentVersion.id)) {
-							selection.versionId = combo.getText();
-						}
+			combo.addSelectionListener(widgetSelectedAdapter(e -> {
+				for (ComponentVersionSelection selection : selections) {
+					if (selection.id.equals(componentVersion.id)) {
+						selection.versionId = combo.getText();
 					}
 				}
-			});
+				validate();
+			}));
 		}
 		componentContainer.getParent().layout(true, true);
 		componentContainer.redraw();
@@ -301,8 +311,9 @@ public class NewProjectWizardPage extends WizardPage {
 		this.directory = directory;
 	}
 
-	public void init(InitializeResult initializeResult) {
+	public void init(InitializeResult initializeResult, Server server) {
 		this.initializeResult = initializeResult;
+		this.server = server;
 		parameters = new ProvisioningParameters();
 		parameters.templateSelection = new TemplateSelection();
 		parameters.componentVersionSelections = new ComponentVersionSelection[initializeResult.componentVersions.length];
@@ -318,34 +329,59 @@ public class NewProjectWizardPage extends WizardPage {
 		initSemaphore.release();
 	}
 
-	public void showError(ErroneousParameter erroneousParameter) {
-		nameDecoration.hide();
-		locationDecoration.hide();
-		versionDecoration.hide();
-		templateDecoration.hide();
-		if (erroneousParameter == null) {
-			return;
+	private void validate() {
+		server.Validation(getParameters()).thenAccept(result -> {
+			boolean isPageComplete = !showError(result.errorMessage, result.erroneousParameters);
+			Display.getDefault().asyncExec(() -> {
+				setPageComplete(isPageComplete);
+			});
+		});
+	}
+
+	public boolean showError(String errorMessage, ErroneousParameter[] erroneousParameters) {
+		Display.getDefault().asyncExec(() -> {
+			setErrorMessage(errorMessage);
+			nameDecoration.hide();
+			locationDecoration.hide();
+			if (versionDecoration != null) {
+				versionDecoration.hide();
+			}
+			templateDecoration.hide();
+		});
+
+		if (erroneousParameters == null || erroneousParameters.length == 0) {
+			return errorMessage != null && !errorMessage.isEmpty();
 		}
-		switch (erroneousParameter.parameterType) {
-		case Name:
-			nameDecoration.showHoverText(erroneousParameter.message);
-			nameDecoration.show();
-			break;
-		case Location:
-			locationDecoration.showHoverText(erroneousParameter.message);
-			locationDecoration.show();
-			break;
-		case Version:
-			versionDecoration.showHoverText(erroneousParameter.message);
-			versionDecoration.show();
-			break;
-		case Template:
-			templateDecoration.showHoverText(erroneousParameter.message);
-			templateDecoration.show();
-			break;
-		default:
-			break;
+		for (ErroneousParameter erroneousParameter : erroneousParameters) {
+			if (erroneousParameter == null) {
+				continue;
+			}
+			Display.getDefault().asyncExec(() -> {
+				switch (erroneousParameter.parameterType) {
+				case Name:
+					nameDecoration.showHoverText(erroneousParameter.message);
+					nameDecoration.show();
+					break;
+				case Location:
+					locationDecoration.showHoverText(erroneousParameter.message);
+					locationDecoration.show();
+					break;
+				case Version:
+					if (versionDecoration != null) {
+						versionDecoration.showHoverText(erroneousParameter.message);
+						versionDecoration.show();
+					}
+					break;
+				case Template:
+					templateDecoration.showHoverText(erroneousParameter.message);
+					templateDecoration.show();
+					break;
+				default:
+					break;
+				}
+			});
 		}
+		return true;
 	}
 
 }

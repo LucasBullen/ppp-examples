@@ -20,11 +20,10 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
 public class NewProjectPreviewWizardPage extends WizardPage {
-	static String pageName = "name";
 	PreviewResult previewResult;
 
 	protected NewProjectPreviewWizardPage() {
-		super(pageName);
+		super("Preview");
 	}
 
 	public void init(PreviewResult previewResult) {

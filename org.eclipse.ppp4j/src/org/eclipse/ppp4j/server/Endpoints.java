@@ -12,10 +12,12 @@
  *******************************************************************************/
 package org.eclipse.ppp4j.server;
 
+import org.eclipse.ppp4j.messages.Initialize;
 import org.eclipse.ppp4j.messages.InitializeResult;
 import org.eclipse.ppp4j.messages.PreviewResult;
 import org.eclipse.ppp4j.messages.ProvisionInstructionsResult;
 import org.eclipse.ppp4j.messages.ProvisionResult;
+import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.ppp4j.messages.RpcRequest;
 import org.eclipse.ppp4j.messages.RpcResponse;
 import org.eclipse.ppp4j.messages.ValidationResult;
@@ -24,13 +26,13 @@ public interface Endpoints {
 
 	RpcResponse generateResponseFromCustomEndpoint(RpcRequest request);
 
-	ProvisionInstructionsResult provisionInstructions(RpcRequest request);
+	InitializeResult initialize(Initialize initialize);
 
-	ProvisionResult provision(RpcRequest request);
+	ValidationResult validation(ProvisioningParameters parameters);
 
-	PreviewResult preview(RpcRequest request);
+	PreviewResult preview(ProvisioningParameters parameters);
 
-	ValidationResult validation(RpcRequest request);
+	ProvisionResult provision(ProvisioningParameters parameters);
 
-	InitializeResult initialize(RpcRequest request);
+	ProvisionInstructionsResult provisionInstructions(ProvisioningParameters parameters);
 }

@@ -24,10 +24,12 @@ import java.util.concurrent.Semaphore;
 import org.eclipse.ppp4e.ProvisioningPlugin;
 import org.eclipse.ppp4j.messages.Initialize;
 import org.eclipse.ppp4j.messages.InitializeResult;
+import org.eclipse.ppp4j.messages.PreviewResult;
 import org.eclipse.ppp4j.messages.ProvisionResult;
 import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.ppp4j.messages.RpcRequest;
 import org.eclipse.ppp4j.messages.RpcResponse;
+import org.eclipse.ppp4j.messages.ValidationResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -73,6 +75,18 @@ public class Server {
 		});
 	}
 
+	public CompletableFuture<ValidationResult> Validation(ProvisioningParameters parameters) {
+		return sendMessage("validation", parameters).thenApply(object -> {
+			return gson.fromJson(gson.toJson(object), ValidationResult.class);
+		});
+	}
+
+	public CompletableFuture<PreviewResult> Preview(ProvisioningParameters parameters) {
+		return sendMessage("preview", parameters).thenApply(object -> {
+			return gson.fromJson(gson.toJson(object), PreviewResult.class);
+		});
+	}
+
 	public CompletableFuture<ProvisionResult> Provision(ProvisioningParameters parameters) {
 		return sendMessage("provision", parameters).thenApply(object -> {
 			return gson.fromJson(gson.toJson(object), ProvisionResult.class);
@@ -86,6 +100,7 @@ public class Server {
 			RpcRequest request = new RpcRequest(String.valueOf(id), baseMethod + method, params);
 			writer.println(gson.toJson(request));
 			writer.flush();
+			System.out.println("client2server: " + gson.toJson(request));
 
 			Semaphore responseSemaphore = new Semaphore(0);
 			messageResponseSemaphores.put(id, responseSemaphore);

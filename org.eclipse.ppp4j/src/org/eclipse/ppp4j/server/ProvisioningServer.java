@@ -16,6 +16,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import org.eclipse.ppp4j.messages.Initialize;
+import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.ppp4j.messages.RpcRequest;
 import org.eclipse.ppp4j.messages.RpcResponse;
 
@@ -79,19 +81,19 @@ public abstract class ProvisioningServer implements Endpoints {
 		Object result;
 		switch (method) {
 		case "initalize":
-			result = initialize(request);
+			result = initialize(gson.fromJson(gson.toJson(request.params), Initialize.class));
 			break;
 		case "validation":
-			result = validation(request);
+			result = validation(gson.fromJson(gson.toJson(request.params), ProvisioningParameters.class));
 			break;
 		case "preview":
-			result = preview(request);
+			result = preview(gson.fromJson(gson.toJson(request.params), ProvisioningParameters.class));
 			break;
 		case "provision":
-			result = provision(request);
+			result = provision(gson.fromJson(gson.toJson(request.params), ProvisioningParameters.class));
 			break;
 		case "provisionInstructions":
-			result = provisionInstructions(request);
+			result = provisionInstructions(gson.fromJson(gson.toJson(request.params), ProvisioningParameters.class));
 			break;
 		default:
 			return generateResponseFromCustomEndpoint(request);

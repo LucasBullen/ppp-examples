@@ -13,8 +13,8 @@
 package org.eclipse.ppp4j.messages;
 
 public class Initialize {
-	boolean supportMarkdown;
-	boolean allowFileCreation;
+	public boolean supportMarkdown;
+	public boolean allowFileCreation;
 
 	public Initialize() {
 	}
