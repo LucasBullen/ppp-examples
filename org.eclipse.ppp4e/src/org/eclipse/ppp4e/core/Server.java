@@ -46,13 +46,15 @@ public class Server {
 
 	public Server(StreamConnectionProvider streamConnectionProvider) {
 		this.streamConnectionProvider = streamConnectionProvider;
-		try {
-			streamConnectionProvider.start();
-			writer = new PrintWriter(streamConnectionProvider.getOutputStream());
-			listenForMessages();
-		} catch (Exception e) {
-			ProvisioningPlugin.logError(e);
+	}
+
+	public boolean openConnection() {
+		if (!streamConnectionProvider.start()) {
+			return false;
 		}
+		writer = new PrintWriter(streamConnectionProvider.getOutputStream());
+		listenForMessages();
+		return true;
 	}
 
 	public void closeConnection() {

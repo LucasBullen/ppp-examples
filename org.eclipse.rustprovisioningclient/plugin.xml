@@ -15,5 +15,20 @@
             name="Rust">
       </category>
    </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="org.eclipse.rustprovisioningclient.RustPreferenceInitializer">
+      </initializer>
+   </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="org.eclipse.ppp4e.preferencePage"
+            class="org.eclipse.rustprovisioningclient.RustProvisioningPreferencePage"
+            id="org.eclipse.rustprovisioningclient.preferencePage"
+            name="Rust">
+      </page>
+   </extension>
 
 </plugin>

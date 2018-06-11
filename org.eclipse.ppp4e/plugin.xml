@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="org.eclipse.ppp4e.ui.ProvisioningPreferencePage"
+            id="org.eclipse.ppp4e.preferencePage"
+            name="New Project Wizards">
+      </page>
+   </extension>
 
 </plugin>

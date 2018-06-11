@@ -17,23 +17,36 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ppp4e.core.StreamConnectionProvider;
+import org.eclipse.ui.PlatformUI;
 
 public class RustStreamConnectionProvider implements StreamConnectionProvider {
 	private Process process;
-	private final String rpps = "/home/lbullen/Documents/rust_server/rust_pps.jar";
 	@Override
-	public void start() throws IOException {
+	public boolean start() {
 		if (this.process != null && this.process.isAlive()) {
-			return;
+			return false;
 		}
-		String[] command = new String[] { "/bin/bash", "-c", "java -jar " + rpps };
+		String serverCommand = RustProvisioningPlugin.getDefault().getPreferenceStore()
+				.getString(RustPreferenceInitializer.rppsPathPreference);
+		if (serverCommand.isEmpty()) {
+			MessageDialog.openError(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), "No Server",
+					"Please specify a valid provisioning server path in the Rust preferences");
+			return false;
+		}
+		String[] command = new String[] { "/bin/bash", "-c", serverCommand };
 		if (Platform.getOS().equals(Platform.OS_WIN32)) {
-			command = new String[] { "cmd", "/c", "java -jar " + rpps };
+			command = new String[] { "cmd", "/c", serverCommand };
 		}
 		ProcessBuilder builder = new ProcessBuilder(command);
 		builder.redirectErrorStream(true);
-		this.process = builder.start();
+		try {
+			this.process = builder.start();
+		} catch (IOException e) {
+			return false;
+		}
+		return true;
 	}
 
 	@Override

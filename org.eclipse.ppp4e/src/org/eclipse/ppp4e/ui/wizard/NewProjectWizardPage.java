@@ -55,9 +55,9 @@ public class NewProjectWizardPage extends WizardPage {
 	private InitializeResult initializeResult;
 	private Server server;
 	private Semaphore initSemaphore = new Semaphore(0);
-	private boolean initialized = false;
 
 	private Label loadingLabel;
+	private String loadingLabelText = "Loading wizard from Project Provisioning Server...";
 
 	private Text nameInput;
 	private Text locationInput;
@@ -97,8 +97,15 @@ public class NewProjectWizardPage extends WizardPage {
 			try {
 				initSemaphore.acquire();
 				Display.getDefault().asyncExec(() -> {
-					removeLoadingControl();
-					createParameterControl(parent);
+					if (initializeResult != null) {
+						removeLoadingControl();
+						createParameterControl(parent);
+					} else {
+						loadingLabelText = "Failed to start the provisioning server.";
+						if (loadingLabel != null) {
+							loadingLabel.setText(loadingLabelText);
+						}
+					}
 				});
 			} catch (InterruptedException e) {
 				ProvisioningPlugin.logError(e);
@@ -114,13 +121,13 @@ public class NewProjectWizardPage extends WizardPage {
 			container = new Composite(parent, SWT.NULL);
 			setControl(container);
 		}
-		if (initialized) {
+		if (initializeResult != null) {
 			return;
 		}
 		container.setLayout(new GridLayout(1, false));
 		loadingLabel = new Label(container, SWT.NONE);
-		loadingLabel.setText("Loading wizard from Project Provisioning Server...");
-		if (initialized) {
+		loadingLabel.setText(loadingLabelText);
+		if (initializeResult != null) {
 			removeLoadingControl();
 		}
 	}
@@ -314,28 +321,31 @@ public class NewProjectWizardPage extends WizardPage {
 	public void init(InitializeResult initializeResult, Server server) {
 		this.initializeResult = initializeResult;
 		this.server = server;
-		parameters = new ProvisioningParameters();
-		parameters.templateSelection = new TemplateSelection();
-		parameters.componentVersionSelections = new ComponentVersionSelection[initializeResult.componentVersions.length];
-		for (int i = 0; i < initializeResult.componentVersions.length; i++) {
-			ComponentVersion componentVersion = initializeResult.componentVersions[i];
-			if (componentVersion.versions.length == 0) {
-				continue;
+		if (initializeResult != null) {
+			parameters = new ProvisioningParameters();
+			parameters.templateSelection = new TemplateSelection();
+			parameters.componentVersionSelections = new ComponentVersionSelection[initializeResult.componentVersions.length];
+			for (int i = 0; i < initializeResult.componentVersions.length; i++) {
+				ComponentVersion componentVersion = initializeResult.componentVersions[i];
+				if (componentVersion.versions.length == 0) {
+					continue;
+				}
+				parameters.componentVersionSelections[i] = new ComponentVersionSelection(componentVersion.id,
+						componentVersion.versions[0].id);
 			}
-			parameters.componentVersionSelections[i] = new ComponentVersionSelection(componentVersion.id,
-					componentVersion.versions[0].id);
 		}
-		initialized = true;
 		initSemaphore.release();
 	}
 
 	private void validate() {
-		server.Validation(getParameters()).thenAccept(result -> {
-			boolean isPageComplete = !showError(result.errorMessage, result.erroneousParameters);
-			Display.getDefault().asyncExec(() -> {
-				setPageComplete(isPageComplete);
+		if (server != null) {
+			server.Validation(getParameters()).thenAccept(result -> {
+				boolean isPageComplete = !showError(result.errorMessage, result.erroneousParameters);
+				Display.getDefault().asyncExec(() -> {
+					setPageComplete(isPageComplete);
+				});
 			});
-		});
+		}
 	}
 
 	public boolean showError(String errorMessage, ErroneousParameter[] erroneousParameters) {

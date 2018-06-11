@@ -58,16 +58,21 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 		addPage(inputPage);
 		previewPage = null;
 		server = new Server(getStreamConnectionProvider());
-		server.Initalize().thenAccept(initializeResult -> {
-			inputPage.init(initializeResult, server);
-			if (initializeResult.previewSupported) {
-				previewPage = new NewProjectPreviewWizardPage();
-				Display.getDefault().asyncExec(() -> {
-					addPage(previewPage);
-					inputPage.updatedButtons();
-				});
-			}
-		});
+		if (server.openConnection()) {
+			server.Initalize().thenAccept(initializeResult -> {
+				inputPage.init(initializeResult, server);
+				if (initializeResult.previewSupported) {
+					previewPage = new NewProjectPreviewWizardPage();
+					Display.getDefault().asyncExec(() -> {
+						addPage(previewPage);
+						inputPage.updatedButtons();
+					});
+				}
+			});
+		} else {
+			server = null;
+			inputPage.init(null, null);
+		}
 	}
 
 	@Override
