@@ -130,6 +130,7 @@ public class NewProjectWizardPage extends WizardPage {
 		if (initializeResult != null) {
 			removeLoadingControl();
 		}
+		setPageComplete(false);
 	}
 
 	private void removeLoadingControl() {

@@ -7,7 +7,7 @@
             category="org.eclipse.rustprovisioningclient.category"
             class="org.eclipse.rustprovisioningclient.NewCargoProjectWizard"
             id="org.eclipse.rustprovisioningclient.cargo"
-            name="Cargo Wizard"
+            name="Cargo Project"
             project="true">
       </wizard>
       <category

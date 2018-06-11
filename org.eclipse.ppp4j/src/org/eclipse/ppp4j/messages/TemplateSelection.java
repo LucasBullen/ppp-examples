@@ -23,4 +23,14 @@ public class TemplateSelection {
 		this.id = id;
 		this.componentVersions = componentVersions;
 	}
+
+	public String getComponentVersion(String componentId) {
+		for (ComponentVersionSelection componentVersionSelection : componentVersions) {
+			if (componentVersionSelection.id.equals(componentId)) {
+				return componentVersionSelection.versionId;
+			}
+		}
+		return null;
+	}
+
 }

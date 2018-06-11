@@ -41,13 +41,11 @@ public class Server extends ProvisioningServer {
 	public InitializeResult initialize(Initialize initialize) {
 		this.supportMarkdown = initialize.supportMarkdown;
 		this.allowFileCreation = initialize.allowFileCreation;
-		// TODO: better storage and generation of templates
 		ComponentVersion[] cargoTemplateComponentVersions = new ComponentVersion[] {
-				new ComponentVersion("cargo_verison", "Cargo Version", null,
-						new Version[] { new Version("0.0.1", "0.0.1", null), new Version("0.2.0", "0.2.0", null) }) };
-		ComponentVersion[] componentVersions = new ComponentVersion[] {
-				new ComponentVersion("rust_version", "Rust Version", null,
-						new Version[] { new Version("1.0.0", "1.0.0", null), new Version("2.0.0", "2.0.0", null) }) };
+				new ComponentVersion("crate_version", "Time Crate Version", null,
+						new Version[] { new Version("0.1.40", "0.1.40", null), new Version("0.1.35", "0.1.35", null),
+								new Version("0.1.30", "0.1.30", null), }) };
+		ComponentVersion[] componentVersions = new ComponentVersion[0];
 		Template[] templates = new Template[] {
 				new Template("hello_world", "Hello World", "basic project outputting 'hello world' to the console",
 						new ComponentVersion[0]),
@@ -126,9 +124,8 @@ public class Server extends ProvisioningServer {
 
 	@Override
 	public ProvisionResult provision(ProvisioningParameters parameters) {
-		ProvisionResult result = new ProvisionResult(null, new ErroneousParameter[0], "/tmp/rust_project",
-				new String[] { "openFile.rs", "sub/openFile.rs" });
-		return result;
+		Provisionner provisionner = new Provisionner();
+		return provisionner.provision(parameters);
 	}
 
 	@Override
