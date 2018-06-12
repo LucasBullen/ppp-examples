@@ -11,7 +11,9 @@ Require-Bundle: org.eclipse.ui.workbench,
  org.eclipse.core.resources,
  com.google.gson;bundle-version="2.7.0",
  org.eclipse.ppp4j;bundle-version="1.0.0",
- org.eclipse.ui.ide
+ org.eclipse.ui.ide,
+ org.eclipse.mylyn.wikitext,
+ org.eclipse.mylyn.wikitext.markdown
 Bundle-ActivationPolicy: lazy
 Bundle-Activator: org.eclipse.ppp4e.ProvisioningPlugin
 Export-Package: org.eclipse.ppp4e.core,

@@ -58,9 +58,7 @@ public class Server {
 	}
 
 	public void closeConnection() {
-		if (writer != null) {
-			writer.close();
-		}
+		streamConnectionProvider.stop();
 		if (reader != null) {
 			try {
 				reader.close();
@@ -68,7 +66,9 @@ public class Server {
 				ProvisioningPlugin.logError(e);
 			}
 		}
-		streamConnectionProvider.stop();
+		if (writer != null) {
+			writer.close();
+		}
 	}
 
 	public CompletableFuture<InitializeResult> Initalize() {

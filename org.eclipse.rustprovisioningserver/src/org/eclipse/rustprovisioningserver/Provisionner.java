@@ -19,23 +19,12 @@ import org.eclipse.ppp4j.messages.ProvisioningParameters;
 public class Provisionner {
 	public ProvisionResult provision(ProvisioningParameters parameters) {
 		File location = new File(parameters.location);
-		String projectName = parameters.name;
-
 		Boolean makeLocation = !location.exists();
 		if (makeLocation) {
 			location.mkdirs();
 		}
 
-		List<String> commandLine = new ArrayList<>();
-		commandLine.add(getCargoPath());
-		commandLine.add("init");
-
-		commandLine.add("--name");
-		commandLine.add(projectName);
-
-		commandLine.add("--bin");
-
-		ProcessBuilder processBuilder = new ProcessBuilder(commandLine);
+		ProcessBuilder processBuilder = new ProcessBuilder(commandListFromParameters(parameters));
 		processBuilder.directory(location);
 
 		String errorMessage = "";
@@ -64,6 +53,20 @@ public class Provisionner {
 
 	}
 
+	public static List<String> commandListFromParameters(ProvisioningParameters parameters) {
+		String projectName = parameters.name;
+		List<String> commandLine = new ArrayList<>();
+		commandLine.add(getCargoPath());
+		commandLine.add("init");
+
+		commandLine.add("--name");
+		commandLine.add(projectName);
+
+		commandLine.add("--bin");
+
+		return commandLine;
+	}
+
 	private ProvisionResult createErrorResult(String errorMessage) {
 		return new ProvisionResult(errorMessage, new ErroneousParameter[0], null, new String[0]);
 	}
@@ -74,7 +77,7 @@ public class Provisionner {
 			try {
 				Files.write(Paths.get(parameters.location + "/Cargo.toml"),
 						("time = \"" + parameters.templateSelection.getComponentVersion("crate_version") + "\"")
-								.getBytes(),
+						.getBytes(),
 						StandardOpenOption.APPEND);
 				InputStream in = getClass().getResourceAsStream("/crate_example/main.rs");
 				Files.copy(in, new File(parameters.location + "/src/main.rs").toPath(),
@@ -91,7 +94,7 @@ public class Provisionner {
 		}
 	}
 
-	private String getCargoPath() {
+	private static String getCargoPath() {
 		String command = findCommandPath("cargo");
 		if (command.isEmpty()) {
 			File possibleCommandFile = new File(System.getProperty("user.home") + "/.cargo/bin/cargo");
@@ -102,7 +105,7 @@ public class Provisionner {
 		return command;
 	}
 
-	private String findCommandPath(String command) {
+	private static String findCommandPath(String command) {
 		try {
 			ProcessBuilder builder = new ProcessBuilder("which", command);
 			Process process = builder.start();

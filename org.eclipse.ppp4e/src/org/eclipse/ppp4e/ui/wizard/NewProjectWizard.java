@@ -63,6 +63,7 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 				inputPage.init(initializeResult, server);
 				if (initializeResult.previewSupported) {
 					previewPage = new NewProjectPreviewWizardPage();
+					previewPage.setServer(server);
 					Display.getDefault().asyncExec(() -> {
 						addPage(previewPage);
 						inputPage.updatedButtons();

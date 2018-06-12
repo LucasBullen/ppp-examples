@@ -12,25 +12,15 @@
  *******************************************************************************/
 package org.eclipse.rustprovisioningserver;
 
-import java.io.File;
-import java.util.ArrayList;
-
-import org.eclipse.ppp4j.messages.ComponentVersion;
-import org.eclipse.ppp4j.messages.ComponentVersionSelection;
-import org.eclipse.ppp4j.messages.ErroneousParameter;
 import org.eclipse.ppp4j.messages.Initialize;
 import org.eclipse.ppp4j.messages.InitializeResult;
-import org.eclipse.ppp4j.messages.ParameterType;
 import org.eclipse.ppp4j.messages.PreviewResult;
 import org.eclipse.ppp4j.messages.ProvisionInstructionsResult;
 import org.eclipse.ppp4j.messages.ProvisionResult;
 import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.ppp4j.messages.RpcRequest;
 import org.eclipse.ppp4j.messages.RpcResponse;
-import org.eclipse.ppp4j.messages.Template;
-import org.eclipse.ppp4j.messages.TemplateSelection;
 import org.eclipse.ppp4j.messages.ValidationResult;
-import org.eclipse.ppp4j.messages.Version;
 import org.eclipse.ppp4j.server.ProvisioningServer;
 
 public class Server extends ProvisioningServer {
@@ -41,91 +31,22 @@ public class Server extends ProvisioningServer {
 	public InitializeResult initialize(Initialize initialize) {
 		this.supportMarkdown = initialize.supportMarkdown;
 		this.allowFileCreation = initialize.allowFileCreation;
-		ComponentVersion[] cargoTemplateComponentVersions = new ComponentVersion[] {
-				new ComponentVersion("crate_version", "Time Crate Version", null,
-						new Version[] { new Version("0.1.40", "0.1.40", null), new Version("0.1.35", "0.1.35", null),
-								new Version("0.1.30", "0.1.30", null), }) };
-		ComponentVersion[] componentVersions = new ComponentVersion[0];
-		Template[] templates = new Template[] {
-				new Template("hello_world", "Hello World", "basic project outputting 'hello world' to the console",
-						new ComponentVersion[0]),
-				new Template("crate_example", "Cargo Crate Example",
-						"Basic cargo based Rust project that imports an external crate",
-						cargoTemplateComponentVersions) };
-
-		TemplateSelection selection = new TemplateSelection("hello_world", new ComponentVersionSelection[0]);
-
-		InitializeResult result = new InitializeResult(false, false, true, templates, componentVersions,
-				new ProvisioningParameters("new_rust_project", "/tmp/new_rust_project", "0.0.1-beta", selection,
-						new ComponentVersionSelection[0]));
-		return result;
+		return new Initializer().initialize();
 	}
 
 	@Override
 	public PreviewResult preview(ProvisioningParameters parameters) {
-		ValidationResult validation = validation(parameters);
-		if (validation.errorMessage != null || validation.erroneousParameters.length > 0) {
-			return new PreviewResult(validation.errorMessage, validation.erroneousParameters, null);
-		}
-		String preview;
-		if (supportMarkdown) {
-			preview = "# Preview \n > steps to make proccess";
-		} else {
-			preview = "Preview \nsteps to make proccess (plain text)";
-		}
-		return new PreviewResult(null, new ErroneousParameter[0], preview);
+		return new Previewer().preview(parameters, supportMarkdown);
 	}
 
 	@Override
 	public ValidationResult validation(ProvisioningParameters parameters) {
-		java.util.List<ErroneousParameter> erroneousParameter = new ArrayList<>();
-		String errorMessage = null;
-
-		if (parameters.name == null || parameters.name.isEmpty()) {
-			errorMessage = "Name field cannot be empty";
-			erroneousParameter.add(new ErroneousParameter(ParameterType.Name, "Name field cannot be empty", null));
-		}
-
-		String locationError = null;
-		if (parameters.location == null || parameters.location.isEmpty()) {
-			locationError = "Location field cannot be empty";
-		} else {
-			File directory = new File(parameters.location);
-			if (directory.isFile()) {
-				locationError = "Given location is an existing file";
-			} else if (directory.getParentFile() == null
-					|| (!directory.exists() && !directory.getParentFile().canWrite())) {
-				locationError = "Unable to create project in given location";
-			} else if (directory.exists() && !directory.canWrite()) {
-				locationError = "Cannot write in given location";
-			}
-		}
-		if (locationError != null) {
-			if (errorMessage == null) {
-				errorMessage = "Location field cannot be empty";
-			} else {
-				errorMessage = "Multiple errors";
-			}
-			erroneousParameter
-			.add(new ErroneousParameter(ParameterType.Location, "Location field cannot be empty", null));
-		}
-
-		if (parameters.templateSelection == null || parameters.templateSelection.id == null) {
-			if (errorMessage == null) {
-				errorMessage = "Select a template";
-			} else {
-				errorMessage = "Multiple errors";
-			}
-			erroneousParameter.add(new ErroneousParameter(ParameterType.Template, "Select a template", null));
-		}
-
-		return new ValidationResult(errorMessage, erroneousParameter.toArray(new ErroneousParameter[0]));
+		return new Validator().validation(parameters);
 	}
 
 	@Override
 	public ProvisionResult provision(ProvisioningParameters parameters) {
-		Provisionner provisionner = new Provisionner();
-		return provisionner.provision(parameters);
+		return new Provisionner().provision(parameters);
 	}
 
 	@Override
