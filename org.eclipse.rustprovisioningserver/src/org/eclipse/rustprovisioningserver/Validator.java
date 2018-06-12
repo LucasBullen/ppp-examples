@@ -46,12 +46,12 @@ public class Validator {
 		}
 		if (locationError != null) {
 			if (errorMessage == null) {
-				errorMessage = "Location field cannot be empty";
+				errorMessage = locationError;
 			} else {
 				errorMessage = "Multiple errors";
 			}
 			erroneousParameter
-					.add(new ErroneousParameter(ParameterType.Location, "Location field cannot be empty", null));
+			.add(new ErroneousParameter(ParameterType.Location, "Location field cannot be empty", null));
 		}
 
 		if (parameters.templateSelection == null || parameters.templateSelection.id == null) {

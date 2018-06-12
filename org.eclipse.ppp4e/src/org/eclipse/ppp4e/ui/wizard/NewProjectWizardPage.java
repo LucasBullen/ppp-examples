@@ -261,6 +261,8 @@ public class NewProjectWizardPage extends WizardPage {
 				componentContainer.getParent().getParent().getParent().getParent().redraw();
 				componentContainer.getParent().getParent().getParent().getParent().update();
 				getShell().pack(true);
+			} else {
+				setTemplate(null);
 			}
 			validate();
 		});
@@ -269,6 +271,11 @@ public class NewProjectWizardPage extends WizardPage {
 	}
 
 	private void setTemplate(Template template) {
+		if(template == null) {
+			parameters.templateSelection = null;
+			return;
+		}
+		parameters.templateSelection = new TemplateSelection();
 		parameters.templateSelection.id = template.id;
 		parameters.templateSelection.componentVersions = new ComponentVersionSelection[template.componentVersions.length];
 		for (int i = 0; i < template.componentVersions.length; i++) {
@@ -370,21 +377,21 @@ public class NewProjectWizardPage extends WizardPage {
 			Display.getDefault().asyncExec(() -> {
 				switch (erroneousParameter.parameterType) {
 				case Name:
-					nameDecoration.showHoverText(erroneousParameter.message);
+					nameDecoration.setDescriptionText(erroneousParameter.message);
 					nameDecoration.show();
 					break;
 				case Location:
-					locationDecoration.showHoverText(erroneousParameter.message);
+					locationDecoration.setDescriptionText(erroneousParameter.message);
 					locationDecoration.show();
 					break;
 				case Version:
 					if (versionDecoration != null) {
-						versionDecoration.showHoverText(erroneousParameter.message);
+						versionDecoration.setDescriptionText(erroneousParameter.message);
 						versionDecoration.show();
 					}
 					break;
 				case Template:
-					templateDecoration.showHoverText(erroneousParameter.message);
+					templateDecoration.setDescriptionText(erroneousParameter.message);
 					templateDecoration.show();
 					break;
 				default:

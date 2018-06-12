@@ -57,7 +57,7 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 		inputPage = new NewProjectWizardPage(getWizardName());
 		addPage(inputPage);
 		previewPage = null;
-		server = new Server(getStreamConnectionProvider());
+		server = new Server(getStreamConnectionProvider(), getWizardName());
 		if (server.openConnection()) {
 			server.Initalize().thenAccept(initializeResult -> {
 				inputPage.init(initializeResult, server);

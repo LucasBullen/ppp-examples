@@ -44,8 +44,8 @@ public class Server {
 	private PrintWriter writer;
 	private BufferedReader reader;
 
-	public Server(StreamConnectionProvider streamConnectionProvider) {
-		this.streamConnectionProvider = streamConnectionProvider;
+	public Server(StreamConnectionProvider streamConnectionProvider, String serverName) {
+		this.streamConnectionProvider = new LoggingStreamConnectionProviderProxy(streamConnectionProvider, serverName);
 	}
 
 	public boolean openConnection() {
