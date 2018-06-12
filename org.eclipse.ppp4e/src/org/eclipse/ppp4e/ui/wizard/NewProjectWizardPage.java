@@ -347,12 +347,18 @@ public class NewProjectWizardPage extends WizardPage {
 
 	private void validate() {
 		if (server != null) {
-			server.Validation(getParameters()).thenAccept(result -> {
-				boolean isPageComplete = !showError(result.errorMessage, result.erroneousParameters);
-				Display.getDefault().asyncExec(() -> {
-					setPageComplete(isPageComplete);
+			if (initializeResult.validationSupported) {
+				server.Validation(getParameters()).thenAccept(result -> {
+					boolean isPageComplete = !showError(result.errorMessage, result.erroneousParameters);
+					Display.getDefault().asyncExec(() -> {
+						setPageComplete(isPageComplete);
+					});
 				});
-			});
+			} else {
+				Display.getDefault().asyncExec(() -> {
+					setPageComplete(true);
+				});
+			}
 		}
 	}
 

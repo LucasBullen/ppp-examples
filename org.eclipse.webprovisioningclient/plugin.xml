@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.newWizards">
+      <wizard
+            category="org.eclipse.webprovisioningclient.category"
+            class="org.eclipse.webprovisioningclient.NewWebProjectWizard"
+            id="org.eclipse.webprovisioningclient.cargo"
+            name="Web Application"
+            project="true">
+      </wizard>
+      <category
+            id="org.eclipse.webprovisioningclient.category"
+            name="Web">
+      </category>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="org.eclipse.webprovisioningclient.WebPreferenceInitializer">
+      </initializer>
+   </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="org.eclipse.ppp4e.preferencePage"
+            class="org.eclipse.webprovisioningclient.WebProvisioningPreferencePage"
+            id="org.eclipse.webprovisioningclient.preferencePage"
+            name="Web">
+      </page>
+   </extension>
+</plugin>

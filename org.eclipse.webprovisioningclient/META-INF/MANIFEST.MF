@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Web Provisioning Client
+Bundle-SymbolicName: org.eclipse.webprovisioningclient;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Automatic-Module-Name: org.eclipse.webprovisioningclient
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: org.eclipse.ppp4e;bundle-version="1.0.0",
+ org.eclipse.jface;bundle-version="3.14.0",
+ org.eclipse.ui;bundle-version="3.109.100",
+ org.eclipse.equinox.common,
+ org.eclipse.swt,
+ org.eclipse.core.runtime;bundle-version="3.14.0",
+ org.eclipse.core.resources
+Bundle-Activator: org.eclipse.webprovisioningclient.WebProvisioningPlugin
+Bundle-ActivationPolicy: lazy

@@ -29,6 +29,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.ppp4e.ProvisioningPlugin;
 import org.eclipse.ppp4e.core.Server;
@@ -37,10 +38,13 @@ import org.eclipse.ppp4j.messages.ProvisionResult;
 import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.INewWizard;
+import org.eclipse.ui.IPageLayout;
+import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.part.ISetSelectionTarget;
 
 public abstract class NewProjectWizard extends Wizard implements INewWizard {
 	private NewProjectWizardPage inputPage;
@@ -131,10 +135,14 @@ public abstract class NewProjectWizard extends Wizard implements INewWizard {
 			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 			if (page != null) {
 				try {
+					IViewPart view = page.findView(IPageLayout.ID_PROJECT_EXPLORER);
 					for (String filePath : openFiles) {
 						IFile rsPrgramFile = project.getFile(filePath);
 						if (rsPrgramFile.exists()) {
 							IDE.openEditor(page, rsPrgramFile);
+							if (view != null) {
+								((ISetSelectionTarget) view).selectReveal(new StructuredSelection(rsPrgramFile));
+							}
 						}
 					}
 				} catch (CoreException e) {
