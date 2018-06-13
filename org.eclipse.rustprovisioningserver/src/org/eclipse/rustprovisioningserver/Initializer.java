@@ -26,7 +26,6 @@ public class Initializer {
 				new ComponentVersion("crate_version", "Time Crate Version", null,
 						new Version[] { new Version("0.1.40", "0.1.40", null), new Version("0.1.35", "0.1.35", null),
 								new Version("0.1.30", "0.1.30", null), }) };
-		ComponentVersion[] componentVersions = new ComponentVersion[0];
 		Template[] templates = new Template[] {
 				new Template("hello_world", "Hello World", "basic project outputting 'hello world' to the console",
 						new ComponentVersion[0]),
@@ -36,9 +35,18 @@ public class Initializer {
 
 		TemplateSelection selection = new TemplateSelection("hello_world", new ComponentVersionSelection[0]);
 
+		ComponentVersion[] componentVersions = new ComponentVersion[] { new ComponentVersion("toolchain",
+				"Rustup Toolchain", "The version of Rustup to set as the default for the system",
+				new Version[] {
+						new Version("stable", "Stable", "Latest version to be fully tested and verified as stable"),
+						new Version("beta", "Beta", null),
+						new Version("nightly", "Nightly", "The newest release, may have bugs") }) };
+		ComponentVersionSelection[] cargoComponentVersionSelection = new ComponentVersionSelection[] {
+				new ComponentVersionSelection("toolchain", "stable") };
+
 		InitializeResult result = new InitializeResult(true, false, true, templates, componentVersions,
 				new ProvisioningParameters("new_rust_project", "/tmp/new_rust_project", "0.0.1-beta", selection,
-						new ComponentVersionSelection[0]));
+						cargoComponentVersionSelection));
 		return result;
 	}
 }

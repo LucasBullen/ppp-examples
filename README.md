@@ -3,6 +3,7 @@
 
  - PPP4J: Holds all the message structures and non-client dependent code
  - PPP4E: Holds the wizards and communication logic that is Eclipse dependent
+ - PPP4PY: A python client to run servers from a command line interface
  - rustProvisioningClient: Eclipse plugin using ppp4e & ppp4j
  - rustProvisioningServer: Java project for provisioning the project using ppp4j
 
