@@ -54,11 +54,13 @@ def main():
 
 def getExecutable():
     while True:
-        server = getUserInput('Select type of project to provision (rust, web):')
+        server = getUserInput('Select type of project to provision (rust, web, os):')
         if server == 'rust':
             return 'java -jar /home/lbullen/Documents/ppp_servers/rust.jar'
         elif server == 'web':
             return 'java -jar /home/lbullen/Documents/ppp_servers/web.jar'
+        elif server == 'os':
+            return 'java -jar /home/lbullen/Documents/ppp_servers/openshift.jar'
         else:
             print("invalid entry, try again")
 

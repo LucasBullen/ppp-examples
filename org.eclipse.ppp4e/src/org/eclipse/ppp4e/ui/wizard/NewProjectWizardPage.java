@@ -35,6 +35,7 @@ import org.eclipse.ppp4j.messages.InitializeResult;
 import org.eclipse.ppp4j.messages.ProvisioningParameters;
 import org.eclipse.ppp4j.messages.Template;
 import org.eclipse.ppp4j.messages.TemplateSelection;
+import org.eclipse.ppp4j.messages.Version;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
@@ -311,7 +312,11 @@ public class NewProjectWizardPage extends WizardPage {
 			combo.addSelectionListener(widgetSelectedAdapter(e -> {
 				for (ComponentVersionSelection selection : selections) {
 					if (selection.id.equals(componentVersion.id)) {
-						selection.versionId = combo.getText();
+						for (Version version : componentVersion.versions) {
+							if (version.title.equals(combo.getText())) {
+								selection.versionId = version.id;
+							}
+						}
 					}
 				}
 				validate();

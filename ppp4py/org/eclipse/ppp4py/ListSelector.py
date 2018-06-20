@@ -15,7 +15,12 @@ import math
 def UserSelectedIdFromItemList(itemList, defaultId):
     if not itemList or not 'id' in itemList[0]:
         return None
-    if not defaultId:
+    isDefaultRelated=False
+    for item in itemList:
+        if item['id'] == defaultId:
+            isDefaultRelated=True
+            break
+    if not defaultId or not isDefaultRelated:
         defaultId = itemList[0]['id']
     PrintTable(itemList)
     while(True):
@@ -36,7 +41,7 @@ def PrintTable(itemList):
         longestId = max(longestId, len(item['id']))
         longestTitle = max(longestTitle, len(item['title']))
         if 'caption' in item:
-            longestDescription = max(longestDescription, len(item['caption']))
+            longestDescription = min(max(longestDescription, len(item['caption'])),100)
     longestId +=2
     longestTitle +=2
     longestDescription +=2
@@ -55,7 +60,10 @@ def PrintTable(itemList):
         lineString = fillStringWithWhitespace(item['id'],longestId, True)+'|'
         lineString += fillStringWithWhitespace(item['title'],longestTitle, True)+'|'
         if 'caption' in item:
-            lineString += fillStringWithWhitespace(item['caption'],longestDescription, True)
+            if len(item['caption']) > 100:
+                lineString += fillStringWithWhitespace(item['caption'][:96]+"...",longestDescription, True)
+            else:
+                lineString += fillStringWithWhitespace(item['caption'],longestDescription, True)
         print(lineString)
 
 def fillStringWithWhitespace(string, width, center):

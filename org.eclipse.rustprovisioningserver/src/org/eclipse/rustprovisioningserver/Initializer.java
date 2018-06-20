@@ -44,7 +44,7 @@ public class Initializer {
 		ComponentVersionSelection[] cargoComponentVersionSelection = new ComponentVersionSelection[] {
 				new ComponentVersionSelection("toolchain", "stable") };
 
-		InitializeResult result = new InitializeResult(true, false, true, templates, componentVersions,
+		InitializeResult result = new InitializeResult(true, true, true, templates, componentVersions,
 				new ProvisioningParameters("new_rust_project", "/tmp/new_rust_project", "0.0.1-beta", selection,
 						cargoComponentVersionSelection));
 		return result;

@@ -31,4 +31,13 @@ public class ProvisioningParameters {
 		this.componentVersionSelections = componentVersionSelections;
 	}
 
+	public ComponentVersionSelection getComponentVersionSelectionById(String id) {
+		for (ComponentVersionSelection componentVersionSelection : componentVersionSelections) {
+			if (componentVersionSelection.id.equals(id)) {
+				return componentVersionSelection;
+			}
+		}
+		return null;
+	}
+
 }

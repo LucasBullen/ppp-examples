@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.newWizards">
+      <wizard
+            category="io.openshift.wizard.client.category"
+            class="io.openshift.wizard.client.NewOpenShiftProjectWizard"
+            id="io.openshift.wizard.client.openshift"
+            name="OpenShift Project"
+            project="true">
+      </wizard>
+      <category
+            id="io.openshift.wizard.client.category"
+            name="OpenShift">
+      </category>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="io.openshift.wizard.client.OpenShiftPreferenceInitializer">
+      </initializer>
+   </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="org.eclipse.ppp4e.preferencePage"
+            class="io.openshift.wizard.client.OpenShiftProvisioningPreferencePage"
+            id="io.openshift.wizard.client.preferencePage"
+            name="OpenShift">
+      </page>
+   </extension>
+
+</plugin>

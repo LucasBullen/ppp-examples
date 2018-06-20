@@ -27,4 +27,13 @@ public class ComponentVersion {
 		this.caption = caption;
 		this.versions = versions;
 	}
+
+	public Version getVersionById(String id) {
+		for (Version version : versions) {
+			if (version.id.equals(id)) {
+				return version;
+			}
+		}
+		return null;
+	}
 }

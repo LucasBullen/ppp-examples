@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Openshift.io Provisioning Server
+Bundle-SymbolicName: io.openshift.wizard.server
+Automatic-Module-Name: org.eclipse.rustprovisioningserver
+Bundle-Version: 1.0.0.qualifier
+Export-Package: io.openshift.wizard.server
+Require-Bundle: org.eclipse.ppp4j;bundle-version="1.0.0",
+ com.google.gson,
+ org.eclipse.osgi
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

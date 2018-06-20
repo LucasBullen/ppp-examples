@@ -27,4 +27,13 @@ public class Template {
 		this.caption = caption;
 		this.componentVersions = componentVersions;
 	}
+
+	public ComponentVersion getComponentVersionById(String id) {
+		for (ComponentVersion componentVersion : componentVersions) {
+			if (componentVersion.id.equals(id)) {
+				return componentVersion;
+			}
+		}
+		return null;
+	}
 }
